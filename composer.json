@@ -1,5 +1,5 @@
 {
-    "name": "geometria-lab/rediska",
+    "name": "lacupulamusic/rediska",
     "description": "Full-featured PHP client for key-value database Redis",
     "keywords": ["redis", "zend", "sessions", "cache"],
     "authors": [
