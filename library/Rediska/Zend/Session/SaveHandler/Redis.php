@@ -36,13 +36,6 @@ require_once 'Zend/Session/SaveHandler/Exception.php';
 class Rediska_Zend_Session_SaveHandler_Redis extends Rediska_Options_RediskaInstance implements Zend_Session_SaveHandler_Interface
 {
     /**
-     * Sessions set
-     * 
-     * @var Rediska_Zend_Session_Set
-     */
-    protected $_set;
-
-    /**
      * Configuration
      * 
      * @var array
@@ -85,9 +78,6 @@ class Rediska_Zend_Session_SaveHandler_Redis extends Rediska_Options_RediskaInst
         }
 
         parent::__construct($options);
-
-        Rediska_Zend_Session_Set::setSaveHandler($this);
-        $this->_set = new Rediska_Zend_Session_Set();
     }
 
     /**
@@ -132,13 +122,6 @@ class Rediska_Zend_Session_SaveHandler_Redis extends Rediska_Options_RediskaInst
      */
     public function write($id, $data)
     {
-        try {
-            $timestamp = time();
-            $this->_set[$timestamp] = $id;
-        } catch (Rediska_Connection_Exec_Exception $e) {
-            $this->_deleteSetOrThrowException($e);
-        }
-
         return $this->getRediska()->setAndExpire(
             $this->_getKeyName($id),
             $data,
@@ -154,12 +137,6 @@ class Rediska_Zend_Session_SaveHandler_Redis extends Rediska_Options_RediskaInst
      */
     public function destroy($id)
     {
-        try {
-            $this->_set->remove($id);
-        } catch(Rediska_Connection_Exec_Exception $e) {
-            $this->_deleteSetOrThrowException($e);
-        }
-
         return $this->getRediska()->delete($this->_getKeyName($id));
     }
 
@@ -171,11 +148,7 @@ class Rediska_Zend_Session_SaveHandler_Redis extends Rediska_Options_RediskaInst
      */
     public function gc($maxlifetime)
     {
-        try {
-            return $this->_set->removeByScore(0, time() - $this->getOption('lifetime'));
-        } catch(Rediska_Connection_Exec_Exception $e) {
-            $this->_deleteSetOrThrowException($e);
-        }
+        return true;
     }
 
     /**
@@ -186,22 +159,6 @@ class Rediska_Zend_Session_SaveHandler_Redis extends Rediska_Options_RediskaInst
     protected function _getKeyName($id)
     {
         return $this->getOption('keyPrefix') . $id;
-    }
-
-    /**
-     * Delete old set or throw exception
-     *
-     * @throws Rediska_Connection_Exec_Exception
-     * @param Rediska_Connection_Exec_Exception $e
-     * @return void
-     */
-    protected function _deleteSetOrThrowException(Rediska_Connection_Exec_Exception $e)
-    {
-        if ($e->getMessage() == 'Operation against a key holding the wrong kind of value') {
-            $this->_set->delete();
-        } else {
-            throw $e;
-        }
     }
 
     /**
